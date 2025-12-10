@@ -1,73 +1,63 @@
+# extractor.py
+# Extracts all required fields from the FNOL text (based on Synapx assessment brief)
+
 import re
-from dateutil import parser as dateparser
-from typing import Optional, Dict
 
-FIELD_PATTERNS = {
-    'policy_number': [r'Policy\s*(No(?:\.|:)?)\s*[:\-]?\s*([A-Z0-9\-]+)', r'Policy Number\s*[:\-]?\s*([A-Z0-9\-]+)'],
-'policy_holder': [r'Policy Holder\s*[:\-]?\s*([A-Za-z \.]+)', r'Insured\s*[:\-]?\s*([A-Za-z \.]+)'],
-'claim_type': [r'Claim Type\s*[:\-]?\s*([A-Za-z \-]+)'],
-'incident_date': [r'Incident Date\s*[:\-]?\s*([A-Za-z0-9, \-/]+)', r'Date of Incident\s*[:\-]?\s*([A-Za-z0-9, \-/]+)'],
-'incident_time': [r'Incident Time\s*[:\-]?\s*([0-2]?[0-9]:[0-5][0-9])'],
-'location': [r'Location\s*[:\-]?\s*([A-Za-z0-9 ,\-\./]+)'],
-'estimated_loss': [r'Estimated Loss\s*[:\-]?\s*(INR|Rs\.?|USD|EUR)?\s*([0-9,]+)']
-}
+def extract_fields(text: str) -> dict:
+    extracted = {}
 
+    # -------------------------------
+    # POLICY INFORMATION
+    # -------------------------------
+    extracted["policyNumber"] = _extract(r"Policy Number[:\- ]+([A-Za-z0-9\-]+)", text)
+    extracted["policyHolder"] = _extract(r"Policy Holder[:\- ]+([A-Za-z ]+)", text)
 
-def _first_match(text: str, patterns):
-    for p in patterns:
-        m = re.search(p, text, re.IGNORECASE)
-        if m:
-            # If capture groups used, prefer last group
-            if m.groups():
-                return m.groups()[-1].strip()
-            return m.group(0).strip()
-    return None
+    extracted["effectiveFrom"] = _extract(r"Effective From[:\- ]+([\d\-\/]+)", text)
+    extracted["effectiveTo"] = _extract(r"Effective To[:\- ]+([\d\-\/]+)", text)
 
+    # -------------------------------
+    # INCIDENT INFORMATION
+    # -------------------------------
+    extracted["incidentDate"] = _extract(r"Incident Date[:\- ]+([\d\-\/]+)", text)
+    extracted["incidentTime"] = _extract(r"Incident Time[:\- ]+([\d:]+)", text)
+    extracted["incidentLocation"] = _extract(r"Location[:\- ]+(.+)", text)
+    extracted["description"] = _extract(r"Description[:\- ]+(.+)", text)
 
-def parse_date(text: str) -> Optional[str]:
-    try:
-        dt = dateparser.parse(text, dayfirst=False)
-        return dt.date().isoformat()
-    except Exception:
-        return None
+    # -------------------------------
+    # INVOLVED PARTIES
+    # -------------------------------
+    extracted["claimant"] = _extract(r"Claimant[:\- ]+([A-Za-z ]+)", text)
+    extracted["thirdParties"] = _extract(r"Third Parties[:\- ]+(.+)", text)
+    extracted["contactDetails"] = _extract(r"Contact[:\- ]+(.+)", text)
 
+    # -------------------------------
+    # ASSET INFORMATION
+    # -------------------------------
+    extracted["assetType"] = _extract(r"Asset Type[:\- ]+([A-Za-z ]+)", text)
+    extracted["assetId"] = _extract(r"Asset ID[:\- ]+([A-Za-z0-9\-]+)", text)
 
-def extract_fields(text: str) -> Dict[str, Optional[str]]:
-    t = text
-    out = {}
-
-
-    out['policy_number'] = _first_match(t, FIELD_PATTERNS['policy_number'])
-    out['policy_holder'] = _first_match(t, FIELD_PATTERNS['policy_holder'])
-    out['claim_type'] = _first_match(t, FIELD_PATTERNS['claim_type'])
-
-
-    raw_date = _first_match(t, FIELD_PATTERNS['incident_date'])
-    out['incident_date_raw'] = raw_date
-    out['incident_date'] = parse_date(raw_date) if raw_date else None
-
-
-    raw_time = _first_match(t, FIELD_PATTERNS['incident_time'])
-    out['incident_time'] = raw_time
-
-
-    out['location'] = _first_match(t, FIELD_PATTERNS['location'])
-
-
-    est = _first_match(t, FIELD_PATTERNS['estimated_loss'])
-    if est:
-        est_clean = re.sub(r'[^0-9]', '', est)
-        out['estimated_loss'] = int(est_clean) if est_clean.isdigit() else None
+    # Estimated Damage (fixed)
+    match = re.search(r"Estimated (Loss|Damage)[:\- ]+INR ?([0-9,]+)", text, re.IGNORECASE)
+    if match:
+        num = match.group(2)
+        extracted["estimatedDamage"] = int(num.replace(",", "").strip())
     else:
-        out['estimated_loss'] = None
+        extracted["estimatedDamage"] = None
+
+    # Claim Type
+    extracted["claimType"] = _extract(r"Claim Type[:\- ]+([A-Za-z ]+)", text)
+
+    # Attachments
+    extracted["attachments"] = _extract(r"Attachments[:\- ]+(.+)", text)
+    extracted["initialEstimate"] = _extract(r"Initial Estimate[:\- ]+(.+)", text)
+
+    extracted["rawText"] = text
+
+    return extracted
 
 
-    # fallback heuristics
-    if not out['policy_holder']:
-        # Try simple "Name:" pattern
-        name_m = re.search(r'Name\s*[:\-]?\s*([A-Z][a-z]+\s+[A-Z][a-z]+)', t)
-        if name_m:
-            out['policy_holder'] = name_m.group(1)
-
-
-    return out
+def _extract(pattern: str, text: str):
+    match = re.search(pattern, text, re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(1).strip()
