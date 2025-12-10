@@ -1,0 +1,20 @@
+# FILE: sample_fnol.txt
+
+
+"""
+First Notice of Loss (FNOL) - Sample
+
+
+Policy Holder: Rajesh Kumar
+Policy Number: PL-2024-998877
+Vehicle: 2018 Honda City (KA05AB1234)
+Claim Type: Third-Party Property Damage
+Incident Date: 2025-12-02
+Incident Time: 18:45
+Location: Outer Ring Road, Hyderabad
+Description: A minor collision with a parked vehicle causing rear bumper damage. Police not involved. No injuries.
+Estimated Loss: INR 18,500
+"""
+
+
+---

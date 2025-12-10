@@ -1,0 +1,24 @@
+{
+  "extracted_fields": {
+    "policy_number": "PL-2024-998877",
+    "policy_holder": "Rajesh Kumar",
+    "claim_type": "Third-Party Property Damage",
+    "incident_date_raw": "2025-12-02",
+    "incident_date": "2025-12-02",
+    "incident_time": "18:45",
+    "location": "Outer Ring Road, Hyderabad",
+    "estimated_loss": 18500,
+    "raw_text": "# FILE: sample_fnol.txt\n\n\n\"\"\"\nFirst Notice of Loss (FNOL) - Sample\n\n\nPolicy Holder: Rajesh Kumar\nPolicy Number: PL-2024-998877\nVehicle: 2018 Honda City (KA05AB1234)\nClaim Type: Third-Party Property Damage\nIncident Date: 2025-12-02\nIncident Time: 18:45\nLocation: Outer Ring Road, Hyderabad\nDescription: A minor collision with a parked vehicle causing rear bumper damage. Police not involved. No injuries.\nEstimated Loss: INR 18,500\n\"\"\"\n\n\n---"
+  },
+  "validation": {
+    "flags": [],
+    "is_complete": true
+  },
+  "routing": {
+    "decision": "escalation",
+    "reasons": [
+      "low_estimated_loss_and_simple_claim_type",
+      "police_or_injury_involved"
+    ]
+  }
+}
